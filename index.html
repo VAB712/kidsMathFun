@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kids Math Fun</title>
+
+<style>
+    body {
+        font-family: 'Comic Sans MS', cursive;
+        background: linear-gradient(135deg, #fceabb, #f8b500);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+    }
+
+    .app {
+        background: white;
+        border: 6px solid black;
+        border-radius: 20px;
+        padding: 20px;
+        width: 95%;
+        max-width: 400px;
+        text-align: center;
+        animation: popIn 0.6s ease;
+    }
+
+    @keyframes popIn {
+        from { transform: scale(0.7); opacity: 0; }
+        to { transform: scale(1); opacity: 1; }
+    }
+
+    .question {
+        display: flex;
+        flex-direction: column; /* stack vertically: number1, operator, number2 */
+        align-items: center;
+        margin-bottom: 20px;
+        gap: 12px;
+    }
+
+    .box {
+        width: 90px;
+        height: 70px;
+        font-size: 32px;
+        font-weight: bold;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        border-radius: 15px;
+        animation: float 2s infinite ease-in-out;
+    }
+
+    @keyframes float {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-6px); }
+    }
+
+    .green {
+        border: 4px solid #2ecc71;
+        color: #2ecc71;
+        background: #ecf9f1;
+    }
+
+    .red {
+        border: 4px solid #e74c3c;
+        color: #e74c3c;
+        background: #fdecea;
+    }
+
+    .answer-box {
+        border-top: 4px solid black;
+        margin-top: 20px;
+        padding-top: 20px;
+    }
+
+    input {
+        width: 100%;
+        font-size: 32px;
+        padding: 15px;
+        border-radius: 20px;
+        border: 4px solid black;
+        text-align: center;
+        outline: none;
+        transition: 0.3s;
+    }
+
+    input.shake {
+        animation: shake 0.4s;
+        border-color: red;
+    }
+
+    @keyframes shake {
+        0% { transform: translateX(0); }
+        25% { transform: translateX(-5px); }
+        50% { transform: translateX(5px); }
+        75% { transform: translateX(-5px); }
+        100% { transform: translateX(0); }
+    }
+
+    button {
+        margin-top: 15px;
+        padding: 12px 25px;
+        font-size: 20px;
+        border-radius: 20px;
+        border: none;
+        background: #3498db;
+        color: white;
+        cursor: pointer;
+        transition: transform 0.2s, background 0.3s;
+    }
+
+    button:hover {
+        background: #2980b9;
+        transform: scale(1.05);
+    }
+
+    .message {
+        margin-top: 10px;
+        font-size: 18px;
+        min-height: 24px;
+    }
+
+    .success {
+        color: green;
+        animation: popIn 0.4s ease;
+    }
+
+    .fail {
+        color: red;
+    }
+
+    @media (max-width: 500px) {
+        .box {
+            width: 80px;
+            height: 60px;
+            font-size: 26px;
+        }
+
+        input {
+            font-size: 26px;
+        }
+    }
+</style>
+</head>
+
+<body>
+
+<div class="app">
+    <div class="question">
+        <div class="box green" id="num1"></div>
+        <div class="box red" id="operator"></div>
+        <div class="box green" id="num2"></div>
+    </div>
+
+    <div class="answer-box">
+        <input type="number" id="answer" placeholder="Type Answer">
+        <button onclick="checkAnswer()">Check</button>
+        <div class="message" id="message"></div>
+    </div>
+</div>
+
+<script>
+    let num1, num2, operator, correctAnswer;
+    let attempts = 0;
+    const operators = ["+", "-", "x", "÷"];
+
+    function randBetween(min, max) { // inclusive
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    function generateQuestion() {
+        attempts = 0;
+        const messageEl = document.getElementById("message");
+        const inputEl = document.getElementById("answer");
+        messageEl.textContent = "";
+        inputEl.value = "";
+
+        operator = operators[Math.floor(Math.random() * operators.length)];
+
+        // Ensure all displayed numbers < 100 and answers < 999.
+        if (operator === "+") {
+            // two positive numbers <100, sum will be <199 (<999)
+            num1 = randBetween(10, 99);
+            num2 = randBetween(10, 99);
+            correctAnswer = num1 + num2;
+        } else if (operator === "-") {
+            // ensure non-negative result and numbers <100
+            let a = randBetween(10, 99);
+            let b = randBetween(10, 99);
+            if (a < b) [a, b] = [b, a];
+            num1 = a;
+            num2 = b;
+            correctAnswer = num1 - num2;
+        } else if (operator === "x") {
+            // second number must be single digit (1-9), product <999 guaranteed when first <100
+            num1 = randBetween(10, 99);
+            num2 = randBetween(1, 9);
+            correctAnswer = num1 * num2;
+            // just in case (shouldn't happen) regenerate if product >= 999
+            if (correctAnswer >= 999) {
+                num1 = randBetween(10, 98);
+                correctAnswer = num1 * num2;
+            }
+        } else if (operator === "÷") {
+            // produce a perfect integer result, no divide by zero, all numbers <100
+            // choose divisor between 2 and 9 (avoids trivially large dividends)
+            num2 = randBetween(2, 9);
+            // choose quotient such that dividend (num1) = num2 * quotient < 100
+            const maxQuotient = Math.floor(99 / num2);
+            const quotient = randBetween(1, Math.max(1, maxQuotient));
+            num1 = num2 * quotient;
+            correctAnswer = quotient;
+        }
+
+        document.getElementById("num1").textContent = num1;
+        document.getElementById("num2").textContent = num2;
+        document.getElementById("operator").textContent = operator;
+    }
+
+    function checkAnswer() {
+        const input = document.getElementById("answer");
+        const message = document.getElementById("message");
+        const userAnswer = Number(input.value);
+
+        if (userAnswer === correctAnswer) {
+            message.textContent = "🎉 बरोबर!";
+            message.className = "message success";
+            setTimeout(generateQuestion, 1500);
+        } else {
+            attempts++;
+            input.classList.add("shake");
+            setTimeout(() => input.classList.remove("shake"), 400);
+
+            if (attempts >= 3) {
+                message.textContent = `❌ चुकीचे उत्तर, बरोबर उत्तर - : ${correctAnswer}`;
+                message.className = "message fail";
+                input.value = correctAnswer;
+                setTimeout(generateQuestion, 2500);
+            } else {
+                message.textContent = `पुन्हा प्रयत्न करा! उर्वरित प्रयत्न: ${3 - attempts}`;
+                message.className = "message fail";
+            }
+        }
+    }
+
+    generateQuestion();
+</script>
+
+</body>
+</html>
